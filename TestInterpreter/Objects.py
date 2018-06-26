@@ -15,5 +15,10 @@ class Aperture:
         # If we want, add code for Obrounds and Polygon
 
 class Gerber:
+    def __init(self, resolution):
+        self.resolution = resolution #Tuple, (integers, decimals)
+        self.unit = "MM"
+        self.unitScale = 1
+        self.apertures = {}
 
 
