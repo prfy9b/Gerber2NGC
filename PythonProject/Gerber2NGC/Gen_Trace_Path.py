@@ -13,6 +13,7 @@ def gen_trace_path(filename, gerberList, offset, h, stop_lift):
     aptset_idx = 0
     aptset_cnt = 0
     current_Dcode = 'D01'
+    region = False
     draw_trace.append('G0 Z' + h + '\n')
 
     for i, line in enumerate(gerberList):
@@ -26,13 +27,20 @@ def gen_trace_path(filename, gerberList, offset, h, stop_lift):
         if line.find('ADD') != -1:
             gerber.apertures[line[3:6]] = Aperture(line, gerber)
 
+        if line[0:3] == "G36":
+            region = True
+
+        if line[0:3] == "G37":
+            region = False
+
+
         if line[0] == 'D':
             current_Dcode = line[0:3]
             print(current_Dcode)
             if True:#int(current_Dcode[1:]) > 9:
                 current_aperture = gerber.apertures[current_Dcode]
 
-        if line[0:3] == "G01" and (current_aperture.xLength > 0.002 or current_aperture.diameter > 0.002):
+        if line[0:3] == "G01" and not region and (current_aperture.xLength > 0.002 or current_aperture.diameter > 0.002):
             if line.find('G01') != -1:  # examine from line n+1, loop till a line without "G01 "
                 if line.find('D03') != -1:
                     print(current_Dcode, 'flash aperture')
