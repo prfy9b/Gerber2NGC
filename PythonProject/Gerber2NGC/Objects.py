@@ -9,10 +9,10 @@ class Aperture:
         self.diameter = -1
         self.isPad = False
         if self.type == 'C':
-            self.diameter = float(line[line.find(",") + 1:line.find("*")])
+            self.diameter = float(line[line.find(",") + 1:line.find("*")]) * gerber.unitScale
         elif self.type == 'R':
-            self.xLength = float(line[line.find(",") + 1:line.find("X")])
-            self.yLength = float(line[line.find("X") + 1:line.find("*")])
+            self.xLength = float(line[line.find(",") + 1:line.find("X")]) * gerber.unitScale
+            self.yLength = float(line[line.find("X") + 1:line.find("*")]) * gerber.unitScale
         # If we want, add code for Obrounds and Polygon
         if self.diameter > .4 / gerber.unitScale or self.xLength > .4 / gerber.unitScale or self.yLength > .4 / gerber.unitScale:
             self.isPad = True
