@@ -1,0 +1,52 @@
+G0 Z5
+G91
+G0 Z0.3
+G90
+G1 X123.977 Y68.484 F2400 ;aperture D26 moveing
+G91
+G0 Z-0.3
+G90
+G1 X133.408 Y68.484 F1200 ;aperture D26 drawing
+G91
+G0 Z0.3
+G90
+G1 X133.448 Y46.499 F2400 ;aperture D26 moveing
+G91
+G0 Z-0.3
+G90
+G1 X125.018 Y46.502 F1200 ;aperture D26 drawing
+G91
+G0 Z0.3
+G90
+G1 X125.018 Y50.346 F2400 ;aperture D26 moveing
+G91
+G0 Z-0.3
+G90
+G1 X125.018 Y46.508 F1200 ;aperture D26 drawing
+G91
+G0 Z0.3
+G90
+G1 X115.384 Y74.714 F2400 ;aperture D26 moveing
+G91
+G0 Z-0.3
+G90
+G1 X129.729 Y74.714 F1200 ;aperture D26 drawing
+G91
+G0 Z0.3
+G90
+G1 X133.408 Y68.484 F2400 ;aperture D26 moveing
+G91
+G0 Z-0.3
+G90
+G1 X138.437 Y68.503 F1200 ;aperture D26 drawing
+G1 X138.437 Y61.548 F1200 ;aperture D26 drawing
+G91
+G0 Z0.3
+G90
+G1 X114.502 Y59.144 F2400 ;aperture D26 moveing
+G91
+G0 Z-0.3
+G90
+G1 X113.08 Y59.144 F1200 ;aperture D26 drawing
+G1 X113.08 Y68.486 F1200 ;aperture D26 drawing
+G1 X117.558 Y68.486 F1200 ;aperture D26 drawing
