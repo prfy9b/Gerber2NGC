@@ -34,11 +34,9 @@ def gen_trace_path(filename, gerberList, offset, h, stop_lift):
             region = False
 
 
-        if line[0] == 'D':
+        if line[0] == 'D' and int(line[1:3]) > 9:
             current_Dcode = line[0:3]
-            print(current_Dcode)
-            if True:#int(current_Dcode[1:]) > 9:
-                current_aperture = gerber.apertures[current_Dcode]
+            current_aperture = gerber.apertures[current_Dcode]
 
         if line[0:3] == "G01" and not region and (current_aperture.xLength > 0.002 or current_aperture.diameter > 0.002):
             if line.find('G01') != -1:  # examine from line n+1, loop till a line without "G01 "
@@ -49,8 +47,8 @@ def gen_trace_path(filename, gerberList, offset, h, stop_lift):
                     draw_to_x = round(draw_to_x, 3)
                     draw_to_y = gerber.unitScale * int(line[line.find('Y') + 1:line.find('D01*')]) / 10 ** gerber.decNum + offset[1]
                     draw_to_y = round(draw_to_y, 3)
-                    draw_trace.append('G1 X' + str(draw_to_x) + ' Y' + str(draw_to_y) + ' F1200 ;aperture ' + current_aperture.code + ' drawing\n')
-                elif line.find('D02') != -1:  # if D01 not found, and D02 not found
+                    draw_trace.append('G1 X' + str(draw_to_x) + ' Y' + str(draw_to_y) + ' E1 F1200 ;aperture ' + current_aperture.code + ' drawing\n')
+                elif line.find('D02') != -1:  # if D02 found
                     start_pnt_x = gerber.unitScale * int(line[line.find('X') + 1:line.find('Y')]) / 10 ** gerber.decNum + offset[0]
                     start_pnt_x = round(start_pnt_x, 3)
                     start_pnt_y = gerber.unitScale * int(line[line.find('Y') + 1:line.find('D02*')]) / 10 ** gerber.decNum + offset[1]
@@ -58,16 +56,51 @@ def gen_trace_path(filename, gerberList, offset, h, stop_lift):
                     draw_trace.append('G91\n')
                     draw_trace.append('G0 Z' + stop_lift + '\n')
                     draw_trace.append('G90\n')
-                    draw_trace.append('G1 X' + str(start_pnt_x) + ' Y' + str(start_pnt_y) + ' F2400 ;aperture ' + current_aperture.code + ' moveing\n')
+                    draw_trace.append('G1 X' + str(start_pnt_x) + ' Y' + str(start_pnt_y) + ' E1 F2400 ;aperture ' + current_aperture.code + ' moving\n')
                     draw_trace.append('G91\n')
                     draw_trace.append('G0 Z-' + stop_lift + '\n')
                     draw_trace.append('G90\n')
-                else:  # if D01 not found, instead, D02 found
+                elif line.find("D03") != -1: # if D03 found
+                    if current_aperture.type == 'C':
+                        radius = current_aperture.diameter * gerber.unitScale / 2
+                        flash_center_x = gerber.unitScale * int(line[line.find('X') + 1: line.find('Y')]) / 10 ** gerber.decNum + offset[0]
+                        flash_center_y = gerber.unitScale * int(line[line.find('Y') + 1: line.find('D03')]) / 10 ** gerber.decNum + offset[0]
+                        draw_trace.append('G91\n')
+                        draw_trace.append('G0 Z' + stop_lift + '\n')
+                        draw_trace.append('G90\n')
+                        draw_trace.append('G1 X' + str(flash_center_x) + ' Y' + str(flash_center_y + radius) + ' E1 F2400 ;aperture ' + current_aperture.code + ' moving to flash pos')
+                        draw_trace.append('G2 X' + str(flash_center_x) + ' Y' + str(flash_center_y + radius) + ' I' + str(flash_center_x) + ' J' + str(flash_center_y) + ' E1 F1200\n')
+                        draw_trace.append('G2 X' + str(flash_center_x) + ' Y' + str(flash_center_y - radius) + ' I' + str(flash_center_x) + ' J' + str(flash_center_y) + ' E1 F1200\n')
+                        draw_trace.append('G1 X' + str(flash_center_x) + ' Y' + str(flash_center_y) + ' E1 F2400')
+                        draw_trace.append('G91\n')
+                        draw_trace.append('G0 Z-' + stop_lift + '\n')
+                        draw_trace.append('G90\n')
+                    elif current_aperture.type == 'R':
+                        flash_center_x = gerber.unitScale * int(line[line.find('X') + 1: line.find('Y')]) / 10 ** gerber.decNum + offset[0]
+                        flash_center_y = gerber.unitScale * int(line[line.find('Y') + 1: line.find('D03')]) / 10 ** gerber.decNum + offset[0]
+                        draw_trace.append('G91\n')
+                        draw_trace.append('G0 Z' + stop_lift + '\n')
+                        draw_trace.append('G90\n')
+                        draw_trace.append('G1 X' + str(flash_center_x - current_aperture.xLength / 2) + ' Y' + str(
+                            flash_center_y - current_aperture.yLength / 2) + ' E1 F2400 ;aperture ' + current_aperture.code + ' moving to flash pos')
+                        draw_trace.append('G1 X' + str(flash_center_x - current_aperture.xLength / 2) + ' Y' + str(
+                            flash_center_y + current_aperture.yLength / 2) + ' E1 F2400')
+                        draw_trace.append('G1 X' + str(flash_center_x + current_aperture.xLength / 2) + ' Y' + str(
+                            flash_center_y + current_aperture.yLength / 2) + ' E1 F2400')
+                        draw_trace.append('G1 X' + str(flash_center_x + current_aperture.xLength / 2) + ' Y' + str(
+                            flash_center_y - current_aperture.yLength / 2) + ' E1 F2400')
+                        draw_trace.append('G1 X' + str(flash_center_x - current_aperture.xLength / 2) + ' Y' + str(
+                            flash_center_y - current_aperture.yLength / 2) + ' E1 F2400')
+                        draw_trace.append('G1 X' + str(flash_center_x) + ' Y' + str(flash_center_y) + ' E1 F2400')
+                        draw_trace.append('G91\n')
+                        draw_trace.append('G0 Z-' + stop_lift + '\n')
+                        draw_trace.append('G90\n')
+                else:
                     draw_to_x = gerber.unitScale * int(line[line.find('X') + 1:line.find('Y')]) / 10 ** gerber.decNum + offset[0]
                     draw_to_x = round(draw_to_x, 3)
                     draw_to_y = gerber.unitScale * int(line[line.find('Y') + 1:line.find('*')]) / 10 ** gerber.decNum + offset[1]
                     draw_to_y = round(draw_to_y, 3)
-                    draw_trace.append('G1 X' + str(draw_to_x) + ' Y' + str(draw_to_y) + ' F1200 ;aperture ' + current_aperture.code + ' drawing\n')
+                    draw_trace.append('G1 X' + str(draw_to_x) + ' Y' + str(draw_to_y) + ' E1 F1200 ;aperture ' + current_aperture.code + ' drawing\n')
 
 
     return draw_trace
