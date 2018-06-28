@@ -11,14 +11,14 @@ from Load_PCB_files import read_gerbers
 from Gen_Trace_Path import gen_trace_path
 
 Noz2_offset = [125, 60]
-layerthickness = 1
+layerthickness = 5
 stop_lift = 0.3
 
-filenames, gerbersDict = read_gerbers()
+filenames, gerbersList = read_gerbers()
 draw_trace = []
 for i in range(0, len(filenames)):
     curren_z = (i+1) * layerthickness
-    draw_trace.append(gen_trace_path(filenames[i], gerbersDict[filenames[i]], Noz2_offset, str(curren_z), str(stop_lift)))
+    draw_trace.append(gen_trace_path(filenames[i], gerbersList[i], Noz2_offset, str(curren_z), str(stop_lift)))
 
 root = tk.Tk()
 root.withdraw()

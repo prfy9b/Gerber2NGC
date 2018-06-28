@@ -15,8 +15,14 @@ def read_gerbers():
     root.withdraw()
     root.call('wm', 'attributes', '.', '-topmost', True)
     filenames = filedialog.askopenfilenames(filetypes=[("Gerber PHO files", "*.PHO"), ("all files", "*.*")], parent=root)
+    orderedNames = []
+    count = 0
     root.update()
     filenames = list(filenames)
+    while(count < len(filenames)):
+        if(filenames[count] == 'LAYER' + count):
+
+
     gerbersDict = {}
 
     for i in range(0, len(filenames)):

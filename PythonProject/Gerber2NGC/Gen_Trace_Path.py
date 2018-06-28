@@ -51,7 +51,7 @@ def gen_trace_path(filename, gerberList, offset, h, stop_lift):
                 draw_trace.append('G91\n')
                 draw_trace.append('G0 Z' + stop_lift + '\n')
                 draw_trace.append('G90\n')
-                draw_trace.append('G1 X' + str(start_pnt_x) + ' Y' + str(start_pnt_y) + ' E1 F2400 ;aperture ' + current_aperture.code + ' moving\n')
+                draw_trace.append('G0 X' + str(start_pnt_x) + ' Y' + str(start_pnt_y) + ' ;aperture ' + current_aperture.code + ' moving\n')
                 draw_trace.append('G91\n')
                 draw_trace.append('G0 Z-' + stop_lift + '\n')
                 draw_trace.append('G90\n')
@@ -64,30 +64,30 @@ def gen_trace_path(filename, gerberList, offset, h, stop_lift):
                     draw_trace.append('G91\n')
                     draw_trace.append('G0 Z' + stop_lift + '\n')
                     draw_trace.append('G90\n')
-                    draw_trace.append('G1 X' + str(flash_center_x) + ' Y' + str(flash_center_y + radius) + ' E1 F2400 ;aperture ' + current_aperture.code + ' moving to flash pos\n')
+                    draw_trace.append('G0 X' + str(flash_center_x) + ' Y' + str(flash_center_y + radius) + ' ;aperture ' + current_aperture.code + ' moving to flash pos\n')
                     draw_trace.append('G2 X' + str(flash_center_x) + ' Y' + str(flash_center_y - radius) + ' I0' + ' J' + str(-radius) + ' E1 F1200\n')
                     draw_trace.append('G2 X' + str(flash_center_x) + ' Y' + str(flash_center_y + radius) + ' I0' + ' J' + str(radius) + ' E1 F1200\n')
-                    draw_trace.append('G1 X' + str(flash_center_x) + ' Y' + str(flash_center_y) + ' E1 F2400\n')
+                    draw_trace.append('G0 X' + str(flash_center_x) + ' Y' + str(flash_center_y) + '\n')
                     draw_trace.append('G91\n')
                     draw_trace.append('G0 Z-' + stop_lift + '\n')
                     draw_trace.append('G90\n')
                 elif current_aperture.type == 'R':
                     flash_center_x = gerber.unitScale * int(line[line.find('X') + 1: line.find('Y')]) / 10 ** gerber.decNum + offset[0]
-                    flash_center_y = gerber.unitScale * int(line[line.find('Y') + 1: line.find('D03')]) / 10 ** gerber.decNum + offset[0]
+                    flash_center_y = gerber.unitScale * int(line[line.find('Y') + 1: line.find('D03')]) / 10 ** gerber.decNum + offset[1]
                     draw_trace.append('G91\n')
                     draw_trace.append('G0 Z' + stop_lift + '\n')
                     draw_trace.append('G90\n')
+                    draw_trace.append('G0 X' + str(flash_center_x - current_aperture.xLength / 2) + ' Y' + str(
+                        flash_center_y - current_aperture.yLength / 2) + ' ;aperture ' + current_aperture.code + ' moving to flash pos\n')
                     draw_trace.append('G1 X' + str(flash_center_x - current_aperture.xLength / 2) + ' Y' + str(
-                        flash_center_y - current_aperture.yLength / 2) + ' E1 F2400 ;aperture ' + current_aperture.code + ' moving to flash pos\n')
-                    draw_trace.append('G1 X' + str(flash_center_x - current_aperture.xLength / 2) + ' Y' + str(
-                        flash_center_y + current_aperture.yLength / 2) + ' E1 F2400\n')
+                        flash_center_y + current_aperture.yLength / 2) + ' E1 F1200\n')
                     draw_trace.append('G1 X' + str(flash_center_x + current_aperture.xLength / 2) + ' Y' + str(
-                        flash_center_y + current_aperture.yLength / 2) + ' E1 F2400\n')
+                        flash_center_y + current_aperture.yLength / 2) + ' E1 F1200\n')
                     draw_trace.append('G1 X' + str(flash_center_x + current_aperture.xLength / 2) + ' Y' + str(
-                        flash_center_y - current_aperture.yLength / 2) + ' E1 F2400\n')
+                        flash_center_y - current_aperture.yLength / 2) + ' E1 F1200\n')
                     draw_trace.append('G1 X' + str(flash_center_x - current_aperture.xLength / 2) + ' Y' + str(
-                        flash_center_y - current_aperture.yLength / 2) + ' E1 F2400\n')
-                    draw_trace.append('G1 X' + str(flash_center_x) + ' Y' + str(flash_center_y) + ' E1 F2400\n')
+                        flash_center_y - current_aperture.yLength / 2) + ' E1 F1200\n')
+                    draw_trace.append('G0 X' + str(flash_center_x) + ' Y' + str(flash_center_y) + '\n')
                     draw_trace.append('G91\n')
                     draw_trace.append('G0 Z-' + stop_lift + '\n')
                     draw_trace.append('G90\n')
