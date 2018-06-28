@@ -11,7 +11,7 @@ from Load_PCB_files import read_gerbers
 from Gen_Trace_Path import gen_trace_path
 
 Noz2_offset = [125, 60]
-layerthickness = 5
+layerthickness = 1
 stop_lift = 0.3
 
 filenames, gerbersDict = read_gerbers()

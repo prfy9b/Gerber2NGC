@@ -7,7 +7,6 @@ filenames, gerbersList = read_gerbers()
 file = gerbersList[filenames[0]]
 unitScale = 1
 gerber = None
-
 for count, line in enumerate(file):
     # Extended Commands
     if line[0] == '%' and line[len(line) - 1] == '%':
@@ -25,6 +24,8 @@ for count, line in enumerate(file):
                 print("Measurement unit not valid.")
                 exit(1)
         elif line[1:3] == "AD":
-            gerber.apertures[line[3:6]] = Aperture(line)
+            gerber.apertures[line[3:6]] = Aperture(line, gerber)
+        elif line[1:3] == "LP":
+            gerber.polarity = line[3]
         elif line[1:3] == "LN":
             continue
