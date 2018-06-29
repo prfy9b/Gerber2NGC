@@ -16,20 +16,38 @@ def read_gerbers():
     root.call('wm', 'attributes', '.', '-topmost', True)
     filenames = filedialog.askopenfilenames(filetypes=[("Gerber PHO files", "*.PHO"), ("all files", "*.*")], parent=root)
     orderedNames = []
-    count = 0
+    count = 1
     root.update()
     filenames = list(filenames)
-    while(count < len(filenames)):
-        if(filenames[count] == 'LAYER' + count):
 
 
-    gerbersDict = {}
+    while(len(filenames) > 0):
+        try:
+            for i, name in enumerate(filenames):
+                if 'VIAS' + str(count) + '.PHO' in name:
+                    orderedNames.append(filenames[i])
+                    del filenames[i]
+                    break
+            for i, name in enumerate(filenames):
+                if 'LAYER' + str(count) + '.PHO' in name:
+                    orderedNames.append(filenames[i])
+                    del filenames[i]
+                    break
+            count += 1
+        except(ValueError):
+            print("ALERT: MAKE SURE ALL FILE NAMES ARE LAYER#.PHO or VIAS#.PHO")
+            for name in filenames:
+                print(name)
+            exit(1)
 
-    for i in range(0, len(filenames)):
-        fhand = open(filenames[i], 'r')
-        while filenames[i].find('/') != -1:
-            filenames[i] = filenames[i][filenames[i].find('/') + 1:len(filenames[i])]
-        gerbersDict[filenames[i]] = fhand.readlines()
+
+    gerbersList = []
+
+    for i in range(0, len(orderedNames)):
+        fhand = open(orderedNames[i], 'r')
+        while orderedNames[i].find('/') != -1:
+            orderedNames[i] = orderedNames[i][orderedNames[i].find('/') + 1:len(orderedNames[i])]
+        gerbersList.append(fhand.readlines())
         fhand.close
 
-    return filenames, gerbersDict
+    return orderedNames, gerbersList
