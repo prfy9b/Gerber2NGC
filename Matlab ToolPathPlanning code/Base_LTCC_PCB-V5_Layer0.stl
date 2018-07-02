@@ -1,0 +1,86 @@
+solid Sub_LTCC_PCB-V5_GBL.stl
+  facet normal 0 1 0
+    outer loop
+      vertex 149.995 84.995 0
+      vertex 100.005 84.995 0
+      vertex 100.005 84.995 0.3
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 149.995 84.995 0
+      vertex 100.005 84.995 0.3
+      vertex 149.995 84.995 0.3
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 100.005 84.995 0
+      vertex 100.005 35.005 0
+      vertex 100.005 35.005 0.3
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex 100.005 84.995 0
+      vertex 100.005 35.005 0.3
+      vertex 100.005 84.995 0.3
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 149.995 84.995 0.3
+      vertex 100.005 35.005 0.3
+      vertex 149.995 35.005 0.3
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 149.995 84.995 0.3
+      vertex 100.005 84.995 0.3
+      vertex 100.005 35.005 0.3
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 100.005 35.005 0
+      vertex 149.995 35.005 0
+      vertex 149.995 35.005 0.3
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 149.995 35.005 0
+      vertex 100.005 35.005 0
+      vertex 149.995 84.995 0
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 100.005 35.005 0
+      vertex 149.995 35.005 0.3
+      vertex 100.005 35.005 0.3
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 149.995 35.005 0
+      vertex 149.995 84.995 0
+      vertex 149.995 84.995 0.3
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 149.995 35.005 0
+      vertex 149.995 84.995 0.3
+      vertex 149.995 35.005 0.3
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 100.005 35.005 0
+      vertex 100.005 84.995 0
+      vertex 149.995 84.995 0
+    endloop
+  endfacet
+endsolid Sub_LTCC_PCB-V5_GBL.stl

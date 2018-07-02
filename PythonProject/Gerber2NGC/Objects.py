@@ -30,4 +30,18 @@ class Gerber:
         self.yPos = 0
         self.zPos = 0
 
+class SegmentBound:
+    def __init__(self, startX, startY, endX, endY):
+        self.startX = startX
+        self.startY = startY
+        self.endX = endX
+        self.endY = endY
+
+class ViaBound:
+    def __init__(self, xPos, yPos, aperture):
+        self.xPos = xPos
+        self.yPos = yPos
+        self.aperture = aperture
+
+
 

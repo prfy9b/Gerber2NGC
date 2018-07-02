@@ -1,11 +1,11 @@
 % a raft is printed first
 %% Initializing and reading data
 clc; clear; close all;
-phi= 90; % rotation angle about x axis in degrees (CCW)
+phi= 0; % rotation angle about x axis in degrees (CCW)
 theta= 0; % rotation angle about y axis in degrees (CCW)
 psi= 0; % rotation angle about z axis in degrees (CCW)
 
-Zstep= .450; % layer thickness in mm
+Zstep= .20; % layer thickness in mm
 Xstep= .60; % raster spacing in mm
 gap= Xstep/2; % distance between rasters end points and segments (in y direction)
 ss= 1.5; % raft raster spacing in mm
@@ -24,7 +24,9 @@ I= fopen(uigetfile({'*.STL';'*.*'},'select the input file')); % the dimensions o
 fgetl(I);
 i= 1;
 n= fgetl(I);
+count = 0;
 while ~ strcmp(n, 'endsolid')
+    disp(count);
     N(i,:)= str2num(n(16:length(n))); % N is the normal vectors matrix
     fgetl(I);
     v= fgetl(I); V(i,:,1)= str2num(v(16:length(v))); % V is a 3D matrix (dim= no. of triangles X 3 (x y z) X 3 (for each triangle))
@@ -34,6 +36,7 @@ while ~ strcmp(n, 'endsolid')
     fgetl(I);
     n= fgetl(I);
     i= i+1;
+    count = count + 7;
 end
 
 ph= phi*pi/180;
@@ -52,7 +55,7 @@ V(:,3,:)= V(:,3,:) - min(min(V(:,3,:)))+ .01;
 %% Slicing
 Zmax= max(max(V(:,3,:)));
 Z= Zstep;
-j= 0; k= 0; l= 0; u= 0;
+j= 0; k= 0; layer= 0; u= 0;
 while Z <= Zmax % for each Z plane
     for i= 1:length(V) % for each triangle
         if Z >= min(V(i,3,:)) && Z <= max(V(i,3,:)) % if Z plane has intersection with ith triangle
@@ -72,18 +75,18 @@ while Z <= Zmax % for each Z plane
                 Q(k,:)= [(V(i,1,3)-V(i,1,1))*(Z-V(i,3,1))/(V(i,3,3)-V(i,3,1))+V(i,1,1) (V(i,2,3)-V(i,2,1))*(Z-V(i,3,1))/(V(i,3,3)-V(i,3,1))+V(i,2,1) Z];
             end
             if two_three % find the intersection. R contains (x y z) of the intersection
-                l= l+1;
-                R(l,:)= [(V(i,1,2)-V(i,1,3))*(Z-V(i,3,3))/(V(i,3,2)-V(i,3,3))+V(i,1,3) (V(i,2,2)-V(i,2,3))*(Z-V(i,3,3))/(V(i,3,2)-V(i,3,3))+V(i,2,3) Z];
+                layer= layer+1;
+                R(layer,:)= [(V(i,1,2)-V(i,1,3))*(Z-V(i,3,3))/(V(i,3,2)-V(i,3,3))+V(i,1,3) (V(i,2,2)-V(i,2,3))*(Z-V(i,3,3))/(V(i,3,2)-V(i,3,3))+V(i,2,3) Z];
             end
             hold on; grid on
             if one_two && one_three
                 sx(u,:)= [P(j,1) Q(k,1)]; sy(u,:)= [P(j,2) Q(k,2)]; sz(u,:)= [Z Z];
                 plot3(sx(u,:), sy(u,:), sz(u,:)) % plot slices in one figure
             elseif one_two && two_three
-                sx(u,:)= [P(j,1) R(l,1)]; sy(u,:)= [P(j,2) R(l,2)]; sz(u,:)= [Z Z];
+                sx(u,:)= [P(j,1) R(layer,1)]; sy(u,:)= [P(j,2) R(layer,2)]; sz(u,:)= [Z Z];
                 plot3(sx(u,:), sy(u,:), sz(u,:)) % plot slices in one figure
             elseif two_three && one_three
-                sx(u,:)= [R(l,1) Q(k,1)]; sy(u,:)= [R(l,2) Q(k,2)]; sz(u,:)= [Z Z];
+                sx(u,:)= [R(layer,1) Q(k,1)]; sy(u,:)= [R(layer,2) Q(k,2)]; sz(u,:)= [Z Z];
                 plot3(sx(u,:), sy(u,:), sz(u,:)) % plot slices in one figure
             end
         end
@@ -98,13 +101,13 @@ k= 0;
 while i < length(s) % this loop obtains S from s just by manipulating the indices
     tmp= s(i,6);
     j= i+1;
-    l= 0;
+    layer= 0;
     while (j <= length(s)) && (s(j,6)==tmp)
         j= j+1;
-        l= l+1;
+        layer= layer+1;
     end
     k= k+1;
-    S(1:l+1,:,k)= s(i:j-1,:); % S contains all SEGMENTs (not rasters) for all layers BUT SEPARATELY. dim= max no. seg x 6 x no. layers
+    S(1:layer+1,:,k)= s(i:j-1,:); % S contains all SEGMENTs (not rasters) for all layers BUT SEPARATELY. dim= max no. seg x 6 x no. layers
     i= j;
 end
 %% Rastering
@@ -143,14 +146,14 @@ for i= 1:size(S,3) % for each layer find rasters
     n= size(t,1);
     ft= zeros(2,3);
     while size(ft,1) < n % this loop reorders "t" and names it as "ft". ft is the final raster matrix and is used to plot data and ...
-        l=1;
-        while l < size(t,1)
-            ft(j:j+1,:)= t(l:l+1,:);
-            ttemp(l:l+1,:)= 0; % after using a raster, put zeros in it's place
-            while (l < size(t,1)) && (t(l,1)== t(l+1,1)) % jump over rasters with same X
-                l= l+1;
+        layer=1;
+        while layer < size(t,1)
+            ft(j:j+1,:)= t(layer:layer+1,:);
+            ttemp(layer:layer+1,:)= 0; % after using a raster, put zeros in it's place
+            while (layer < size(t,1)) && (t(layer,1)== t(layer+1,1)) % jump over rasters with same X
+                layer= layer+1;
             end
-            l= l+1;
+            layer= layer+1;
             j= j+2;
         end
         t= reshape(nonzeros(ttemp),length(nonzeros(ttemp))/3,3); % the new "t" is formed by removing the used rasters
