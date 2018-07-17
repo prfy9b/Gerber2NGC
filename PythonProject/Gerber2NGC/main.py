@@ -22,7 +22,7 @@ def main():
     lineThickness = .2
     layerthickness = lineThickness / 2
     stop_lift = 0.3
-    angle = [-60, -30, 0, 60, 90] #Angle flashes/layers are filled with, in degrees. One per layer/via pair, between -90 and 90 degrees
+    angle = [0, 0, 0, 0, 0] #Angle flashes/layers are filled with, in degrees. One per layer/via pair, between -90 and 90 degrees
     rotateCenter = (125, 60)
     filenames, gerbersList = read_gerbers()
     draw_trace = []
@@ -34,6 +34,27 @@ def main():
     curren_z = 1
     exuderDelay = .2
 
+    # Read config.ini
+    fin = open("config.ini", "r")
+    iniOptions = fin.readlines()
+    for line in iniOptions:
+        if line[0:5] == "angle":
+            angle = list(map(int, line[line.find('=') + 2:].split(',')))
+        if line[0:15] == "lineThicknessMM":
+            lineThickness = float(line[line.find('=') + 2:])
+        if line[0:16] == "layerThicknessMM":
+            layerThickness = float(line[line.find('=') + 2:])
+        if line[0:13] == "Noz2_Offset":
+            Noz2_Offset = list(map(float, line[line.find('=') + 2:].split(',')))
+        if line[0:11] == "stop_liftMM":
+            stop_lift = float(line[line.find('=') + 2:])
+        if line[0:11] == "outputCoeff":
+            outputCoeff = float(line[line.find('=') + 2:])
+        if line[0:14] == "rotateCenterMM":
+            rotateCenter = list(map(float, line[line.find('=') + 2:].split(',')))
+
+
+    # Read .GKO bounds file
     for i, name in enumerate(filenames):
         if '.GKO' in name:
             bounds = getBoundsGKO(gerbersList[i], Noz2_offset)
