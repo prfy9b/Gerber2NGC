@@ -24,7 +24,6 @@ def main():
     stop_lift = 0.3
     angle = [0, 0, 0, 0, 0] #Angle flashes/layers are filled with, in degrees. One per layer/via pair, between -90 and 90 degrees
     rotateCenter = (125, 60)
-    filenames, gerbersList = read_gerbers()
     draw_trace = []
     hasVia = False
     layerCount = 1
@@ -33,6 +32,11 @@ def main():
     bounds = []
     curren_z = 1
     exuderDelay = .2
+    center = [0, 0]
+    layerCheck = ["GBL", "G1", "G2", "GTL"]
+    boundsCheck = "GKO"
+    viaCheck = "-vias"
+    filmCheck = "-films"
 
     # Read config.ini
     fin = open("config.ini", "r")
@@ -52,7 +56,20 @@ def main():
             outputCoeff = float(line[line.find('=') + 2:])
         if line[0:14] == "rotateCenterMM":
             rotateCenter = list(map(float, line[line.find('=') + 2:].split(',')))
+        if line[0:10] == "layerCheck":
+            layerCheck = line[line.find('=') + 2:].split(',')
+            layerCheck[len(layerCheck) - 1] = layerCheck[len(layerCheck) - 1].strip()
+        if line[0:11] == "boundsCheck":
+            boundsCheck = line[line.find('=') + 2:].strip()
+        if line[0:8] == "viaCheck":
+            viaCheck = line[line.find('=') + 2:].strip()
+        if line[0:9] == "filmCheck":
+            filmCheck = line[line.find('=') + 2:].strip()
+        if line[0:6] == "center":
+            center = list(map(float, line[line.find('=') + 2:].split(',')))
 
+    filenames, gerbersList = read_gerbers(layerCheck, boundsCheck, viaCheck, filmCheck)
+    offset = [rotateCenter[0] - center[0], rotateCenter[1] - center[1]]
 
     # Read .GKO bounds file
     for i, name in enumerate(filenames):
@@ -71,15 +88,15 @@ def main():
                     j += 1
 
     for i in range(0, len(filenames)):
-        if filenames[i][filenames[i].find('-') + 1:filenames[i].find('.')] == "films":
+        if filmCheck in filenames[i]:
             print("Writing " + filenames[i])
-            draw_trace.append(gen_trace_path_layer(filenames[i], gerbersList[i], Noz2_offset, str(curren_z + lineThickness), str(stop_lift), angle[layerCount-1], rotateCenter, lineThickness, bounds, exuderDelay))
+            draw_trace.append(gen_trace_path_layer(filenames[i], gerbersList[i], offset, Noz2_offset, str(curren_z + lineThickness), str(stop_lift), angle[layerCount-1], rotateCenter, lineThickness, bounds, exuderDelay))
             hasVia = False
             layerCount += 1
-        elif filenames[i][filenames[i].find('-') + 1:filenames[i].find('.')] == "vias":
+        elif viaCheck in filenames[i]:
             curren_z = (i + 1) * layerthickness + 1
             print("Writing " + filenames[i])
-            result = gen_trace_path_via(filenames[i], gerbersList[i], Noz2_offset, str(curren_z), str(stop_lift), angle[layerCount-1], rotateCenter, lineThickness, outputCoeff, exuderDelay, bounds)
+            result = gen_trace_path_via(filenames[i], gerbersList[i], offset, Noz2_offset, str(curren_z), str(stop_lift), angle[layerCount-1], rotateCenter, lineThickness, outputCoeff, exuderDelay, bounds)
             draw_trace.append(result[0])
             bounds = result[1]
             hasVia = True

@@ -18,18 +18,18 @@ def getBoundsGKO(gerbersList, offset):
         if line.find('D01') != -1:
             # Section of line needed changes based on whether new DCode is supplied
             if line.find('D') == -1:
-                draw_to_y = round(gerber.unitScale * int(line[line.find('Y') + 1:line.find('*')]) / 10 ** gerber.decNum, 3)  # + offset[1], 3)
+                draw_to_y = round(gerber.unitScale * int(line[line.find('Y') + 1:line.find('*')]) / 10 ** gerber.decNum + offset[1], 3)
             elif line.find('Y') == -1:
                 draw_to_y = start[1]
             else:
-                draw_to_y = round(gerber.unitScale * int(line[line.find('Y') + 1:line.find('D01*')]) / 10 ** gerber.decNum, 3)  # + offset[1], 3)
+                draw_to_y = round(gerber.unitScale * int(line[line.find('Y') + 1:line.find('D01*')]) / 10 ** gerber.decNum + offset[1], 3)
             if line.find('X') == -1:
                 draw_to_x = start[0]
             else:
                 if(line.find('Y') == -1):
-                    draw_to_x = round(gerber.unitScale * int(line[line.find('X') + 1:line.find('D01*')]) / 10 ** gerber.decNum, 3)  # + offset[0], 3)
+                    draw_to_x = round(gerber.unitScale * int(line[line.find('X') + 1:line.find('D01*')]) / 10 ** gerber.decNum + offset[0], 3)
                 else:
-                    draw_to_x = round(gerber.unitScale * int(line[line.find('X') + 1:line.find('Y')]) / 10 ** gerber.decNum, 3)  # + offset[0],3)
+                    draw_to_x = round(gerber.unitScale * int(line[line.find('X') + 1:line.find('Y')]) / 10 ** gerber.decNum + offset[0],3)
 
             bounds.append([])
             bounds[len(bounds) - 1].append(draw_to_x)
@@ -39,13 +39,13 @@ def getBoundsGKO(gerbersList, offset):
         # Checks for nozzle relocation
         elif line.find('D02') != -1:
             if line.find('Y') == -1:
-                start_pnt_x = gerber.unitScale * int(line[line.find('X') + 1:line.find('D02*')]) / 10 ** gerber.decNum  # + offset[0]
+                start_pnt_x = gerber.unitScale * int(line[line.find('X') + 1:line.find('D02*')]) / 10 ** gerber.decNum + offset[0]
                 start_pnt_y = start[1]
             elif line.find('X') == -1:
                 start_pnt_x = start[0]
             else:
-                start_pnt_x = gerber.unitScale * int(line[line.find('X') + 1:line.find('Y')]) / 10 ** gerber.decNum  # + offset[0]
-                start_pnt_y = gerber.unitScale * int(line[line.find('Y') + 1:line.find('D02*')]) / 10 ** gerber.decNum  # + offset[1]
+                start_pnt_x = gerber.unitScale * int(line[line.find('X') + 1:line.find('Y')]) / 10 ** gerber.decNum + offset[0]
+                start_pnt_y = gerber.unitScale * int(line[line.find('Y') + 1:line.find('D02*')]) / 10 ** gerber.decNum + offset[1]
             start_pnt_x = round(start_pnt_x, 3)
             start_pnt_y = round(start_pnt_y, 3)
             bounds.append([])

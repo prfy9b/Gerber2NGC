@@ -8,7 +8,7 @@ if sys_pf == 'darwin':
     matplotlib.use("TkAgg")
 
 
-def gen_trace_path_layer(filename, gerberList, offset, h, stop_lift, angle, rotateCenter, lineThickness, bounds, exuderDelay):
+def gen_trace_path_layer(filename, gerberList, offset, nozOffset, h, stop_lift, angle, rotateCenter, lineThickness, bounds, exuderDelay):
     gerber = None
     gerberLeft = []
     draw_trace = []
@@ -23,6 +23,13 @@ def gen_trace_path_layer(filename, gerberList, offset, h, stop_lift, angle, rota
     # First pass, initializes variables and memorizes pads
     for i, line in enumerate(gerberList):
         keepLine = False
+
+        if line[0:3] == "G36":
+            region = True
+        if line[0:3] == "G37":
+            region = False
+        if region or "SR" in line or "G04" in line:
+            continue
 
         # Checks for initialization line
         if line.find('%FSLA') != -1:
@@ -48,29 +55,33 @@ def gen_trace_path_layer(filename, gerberList, offset, h, stop_lift, angle, rota
             current_Dcode = line[len(line) - 5: len(line) - 2]
             keepLine = True
 
-
-        if line.find("D03") != -1 or (line.find('D') == -1 and current_Dcode == 'D03' and (line.find('X') != -1 or line.find('Y') != -1)): # if D03 found
+        if (line.find("D03") != -1 or (line.find('D') == -1 and current_Dcode == 'D03' and (line.find('X') != -1 or line.find('Y') != -1))) and current_aperture.type == 'R': # if D03 found
             keepLine = True
             # Draw outline of rectangle
             if line.find('Y') == -1:
                 flash_center_y = start[1]
             else:
-                flash_center_y = gerber.unitScale * int(line[line.find('Y') + 1: line.find('D03')]) / 10 ** gerber.decNum  # + offset[1]
+                flash_center_y = gerber.unitScale * int(line[line.find('Y') + 1: line.find('D03')]) / 10 ** gerber.decNum + offset[1]
             if line.find('X') == -1:
                 flash_center_x = start[0]
             else:
-                flash_center_x = gerber.unitScale * int(line[line.find('X') + 1: line.find('Y')]) / 10 ** gerber.decNum  # + offset[0]
+                flash_center_x = gerber.unitScale * int(line[line.find('X') + 1: line.find('Y')]) / 10 ** gerber.decNum + offset[0]
             pads.append(Pad(flash_center_x, flash_center_y, current_aperture))
 
         if line.find('X') != -1:
             keepLine = True
             if line.find('Y') != -1:
                 start[0] = round(gerber.unitScale * int(line[line.find('X') + 1: line.find('Y')]) / 10 ** gerber.decNum, 3)
+            elif line.find('D') != -1:
+                start[0] = round(gerber.unitScale * int(line[line.find('X') + 1: line.find('D')]) / 10 ** gerber.decNum, 3)
             else:
-                start[0] = round(gerber.unitScale * int(line[line.find('X') + 1: line.find('D')]) / 10 ** gerber.decNum,3)
+                start[0] = line[line.find('X') + 1: line.find('*')]
         if line.find('Y') != -1:
             keepLine = True
-            start[1] = round(gerber.unitScale * int(line[line.find('Y') + 1: line.find('D')]) / 10 ** gerber.decNum, 3)
+            if line.find('D') != -1:
+                start[1] = round(gerber.unitScale * int(line[line.find('Y') + 1: line.find('D')]) / 10 ** gerber.decNum, 3)
+            else:
+                start[1] = line[line.find('Y') + 1: line.find('*')]
 
         if keepLine:
             gerberLeft.append(line)
@@ -96,11 +107,16 @@ def gen_trace_path_layer(filename, gerberList, offset, h, stop_lift, angle, rota
                 draw_to_y = start[1]
                 xVal = line[line.find('X') + 1: line.find('D01*')]
             else:
-                draw_to_y = gerber.unitScale * int(yVal) / 10 ** gerber.decNum  # + offset[1]
+                draw_to_y = round(gerber.unitScale * int(yVal) / 10 ** gerber.decNum, 3) + offset[1]
             if line.find('X') == -1:
                 draw_to_x = start[0]
             else:
-                draw_to_x = gerber.unitScale * int(xVal) / 10 ** gerber.decNum  # + offset[0]
+                draw_to_x = round(gerber.unitScale * int(xVal) / 10 ** gerber.decNum, 3) + offset[0]
+
+            # If trace is on bound, skip
+            for bound in bounds:
+                if draw_to_x == bound[0] and draw_to_y == bound[1]:
+                    continue
 
             # If ends of trace have same X value, treat as vertical line. Else, define slope of line
             if draw_to_x - start[0] == 0:
@@ -186,11 +202,11 @@ def gen_trace_path_layer(filename, gerberList, offset, h, stop_lift, angle, rota
                 xVal = line[line.find('X') + 1: line.find('D02*')]
                 start_pnt_y = start[1]
             else:
-                start_pnt_y = gerber.unitScale * int(yVal) / 10 ** gerber.decNum  # + offset[1]
+                start_pnt_y = gerber.unitScale * int(yVal) / 10 ** gerber.decNum + offset[1]
             if line.find('X') == -1:
                 start_pnt_x = start[0]
             else:
-                start_pnt_x = gerber.unitScale * int(xVal) / 10 ** gerber.decNum  # + offset[0]
+                start_pnt_x = gerber.unitScale * int(xVal) / 10 ** gerber.decNum + offset[0]
             start_pnt_x = round(start_pnt_x, 3)
             start_pnt_y = round(start_pnt_y, 3)
             moveNoz(draw_trace, float(stop_lift))
@@ -199,16 +215,16 @@ def gen_trace_path_layer(filename, gerberList, offset, h, stop_lift, angle, rota
             start = [start_pnt_x, start_pnt_y]
 
         # Checks for Rectangular flashes (Circular should be in VIAS file)
-        elif line.find("D03") != -1 or (line.find('D') == -1 and current_Dcode == 'D03' and (line.find('X') != -1 or line.find('Y') != -1)): # if D03 found
+        elif (line.find("D03") != -1 or (line.find('D') == -1 and current_Dcode == 'D03' and (line.find('X') != -1 or line.find('Y') != -1))) and current_aperture.type == 'R': # if D03 found
             # Draw outline of rectangle
             if line.find('Y') == -1:
                 flash_center_y = start[1]
             else:
-                flash_center_y = gerber.unitScale * int(line[line.find('Y') + 1: line.find('D03')]) / 10 ** gerber.decNum  # + offset[1]
+                flash_center_y = gerber.unitScale * int(line[line.find('Y') + 1: line.find('D03')]) / 10 ** gerber.decNum + offset[1]
             if line.find('X') == -1:
                 flash_center_x = start[0]
             else:
-                flash_center_x = gerber.unitScale * int(line[line.find('X') + 1: line.find('Y')]) / 10 ** gerber.decNum  # + offset[0]
+                flash_center_x = gerber.unitScale * int(line[line.find('X') + 1: line.find('Y')]) / 10 ** gerber.decNum + offset[0]
             xMax = flash_center_x + current_aperture.xLength / 2 - lineThickness
             xMin = xMax - current_aperture.xLength + lineThickness
             yMax = flash_center_y + current_aperture.yLength / 2 - lineThickness
@@ -290,7 +306,7 @@ def gen_trace_path_layer(filename, gerberList, offset, h, stop_lift, angle, rota
 
 
 # Like layer function, but rasters bounds at end of file, and supports circular via flashes rather than rectangular
-def gen_trace_path_via(filename, gerberList, offset, h, stop_lift, angle, rotateCenter, lineThickness, outputCoeff, exuderDelay, bounds = []):
+def gen_trace_path_via(filename, gerberList, offset, nozOffset, h, stop_lift, angle, rotateCenter, lineThickness, outputCoeff, exuderDelay, bounds = []):
     gerber = None
     draw_trace = []
     current_Dcode = ''
@@ -323,23 +339,8 @@ def gen_trace_path_via(filename, gerberList, offset, h, stop_lift, angle, rotate
 
         count = 1
         while count < len(bounds):
-            startCoords = rotateCoords(bounds[count-1][0], bounds[count-1][1], radAngle, rotateCenter)
-            endCoords = rotateCoords(bounds[count][0], bounds[count][1], radAngle, rotateCenter)
-            segments.append([])
-            segments[len(segments) - 1].append(startCoords[0])
-            segments[len(segments) - 1].append(endCoords[0])
-            segments[len(segments) - 1].append(startCoords[1])
-            segments[len(segments) - 1].append(endCoords[1])
             draw_trace.append('G1 X' + str(bounds[count][0]) + ' Y' + str(bounds[count][1]) + ' E1 F1200 ;\n')
             count += 1
-
-        startCoords = rotateCoords(bounds[count - 1][0], bounds[count - 1][1], radAngle, rotateCenter)
-        endCoords = rotateCoords(bounds[0][0], bounds[0][1], radAngle, rotateCenter)
-        segments.append([])
-        segments[len(segments) - 1].append(startCoords[0])
-        segments[len(segments) - 1].append(endCoords[0])
-        segments[len(segments) - 1].append(startCoords[1])
-        segments[len(segments) - 1].append(endCoords[1])
         draw_trace.append('G1 X' + str(bounds[0][0]) + ' Y' + str(bounds[0][1]) + ' E1 F1200 ;\n')
 
         draw_trace.append('M110\n')
@@ -358,16 +359,17 @@ def gen_trace_path_via(filename, gerberList, offset, h, stop_lift, angle, rotate
 
         if line[0:3] == "G36":
             region = True
-
         if line[0:3] == "G37":
             region = False
+        if region or "SR" in line or "G04" in line:
+            continue
 
         if line[0] == 'D' and int(line[1:3]) > 9:
             current_aperture = gerber.apertures[line[0:3]]
         elif line[len(line) - 5] == 'D':
             current_Dcode = line[len(line) - 5: len(line) - 2]
 
-        if line.find('D01') != -1 or (line.find('D') == -1 and current_Dcode == 'D01'):
+        if line.find('D01') != -1 or (line.find('D') == -1 and current_Dcode == 'D01' and (line.find('X') != -1 or line.find('Y') != -1)):
             xVal = line[line.find('X') + 1: line.find('Y')]
             yVal = line[line.find('Y') + 1: line.find('D01*')]
             if(line.find('D') == -1):
@@ -376,14 +378,11 @@ def gen_trace_path_via(filename, gerberList, offset, h, stop_lift, angle, rotate
                 draw_to_y = start[1]
                 xVal = line[line.find('X') + 1: line.find('D01*')]
             else:
-                draw_to_y = gerber.unitScale * int(yVal) / 10 ** gerber.decNum  # + offset[1]
+                draw_to_y = gerber.unitScale * int(yVal) / 10 ** gerber.decNum + offset[1]
             if line.find('X') == -1:
                 draw_to_x = start[0]
             else:
-                draw_to_x = gerber.unitScale * int(xVal) / 10 ** gerber.decNum  # + offset[0]
-
-            tempCoords = rotateCoords(draw_to_x, draw_to_y, radAngle, rotateCenter)
-            tempStart = rotateCoords(start[0], start[1], radAngle, rotateCenter)
+                draw_to_x = gerber.unitScale * int(xVal) / 10 ** gerber.decNum + offset[0]
             coords = [round(float(draw_to_x), 3), round(float(draw_to_y), 3)]
             draw_trace.append('T4; Layer Border\n')
             draw_trace.append('M111\n')
@@ -391,19 +390,12 @@ def gen_trace_path_via(filename, gerberList, offset, h, stop_lift, angle, rotate
             draw_trace.append('G1 X' + str(coords[0]) + ' Y' + str(coords[1]) + ' E1 F1200 ;aperture ' + current_aperture.code + ' drawing\n')
             draw_trace.append('M110\n')
             # Segments are created by all traces, rather than a flash
-            segments.append([])
-            segments[len(segments) - 1].append(tempStart[0])
-            segments[len(segments) - 1].append(tempCoords[0])
-            segments[len(segments) - 1].append(tempStart[1])
-            segments[len(segments) - 1].append(tempCoords[1])
-
-            bounds.append([])
-            bounds[len(bounds) - 1].append(start[0])
-            bounds[len(bounds) - 1].append(coords[0])
-            bounds[len(bounds) - 1].append(start[1])
-            bounds[len(bounds) - 1].append(coords[1])
+            if abs(coords[0] - start[0]) > .01 or abs(coords[1] - start[1]) > .01:
+                bounds.append([])
+                bounds[len(bounds) - 1].append(coords[0])
+                bounds[len(bounds) - 1].append(coords[1])
             start = coords
-        elif line.find('D02') != -1 or (line.find('D') == -1 and current_Dcode == 'D02'):  # if D02 found
+        elif line.find('D02') != -1 or (line.find('D') == -1 and current_Dcode == 'D02' and (line.find('X') != -1 or line.find('Y') != -1)):  # if D02 found
             xVal = line[line.find('X') + 1: line.find('Y')]
             yVal = line[line.find('Y') + 1: line.find('D02*')]
             if line.find('D') == -1:
@@ -412,11 +404,11 @@ def gen_trace_path_via(filename, gerberList, offset, h, stop_lift, angle, rotate
                 xVal = line[line.find('X') + 1: line.find('D02*')]
                 start_pnt_y = start[1]
             else:
-                start_pnt_y = gerber.unitScale * int(yVal) / 10 ** gerber.decNum  # + offset[1]
+                start_pnt_y = gerber.unitScale * int(yVal) / 10 ** gerber.decNum + offset[1]
             if line.find('X') == -1:
                 start_pnt_x = start[0]
             else:
-                start_pnt_x = gerber.unitScale * int(xVal) / 10 ** gerber.decNum  # + offset[0]
+                start_pnt_x = gerber.unitScale * int(xVal) / 10 ** gerber.decNum + offset[0]
             coords = [start_pnt_x, start_pnt_y]
             coords[0] = round(float(start_pnt_x), 3)
             coords[1] = round(float(start_pnt_y), 3)
@@ -426,16 +418,16 @@ def gen_trace_path_via(filename, gerberList, offset, h, stop_lift, angle, rotate
             start = coords
 
         #Checks for circular flashes
-        elif line.find("D03") != -1 or (line.find('D') == -1 and current_Dcode == 'D03' and (line.find('X') != -1 or line.find('Y') != -1)):  # if D03 found
+        elif (line.find("D03") != -1 or (line.find('D') == -1 and current_Dcode == 'D03' and (line.find('X') != -1 or line.find('Y') != -1))) and current_aperture.type == 'C':  # if D03 found
             radius = current_aperture.diameter / 2
             if line.find('Y') == -1:
                 flash_center_y = start[1]
             else:
-                flash_center_y = gerber.unitScale * int(line[line.find('Y') + 1: line.find('D03')]) / 10 ** gerber.decNum  # + offset[1]
+                flash_center_y = gerber.unitScale * int(line[line.find('Y') + 1: line.find('D03')]) / 10 ** gerber.decNum + offset[1]
             if line.find('X') == -1:
                 flash_center_x = start[0]
             else:
-                flash_center_x = gerber.unitScale * int(line[line.find('X') + 1: line.find('Y')]) / 10 ** gerber.decNum  # + offset[0]
+                flash_center_x = gerber.unitScale * int(line[line.find('X') + 1: line.find('Y')]) / 10 ** gerber.decNum + offset[0]
             center = [flash_center_x, flash_center_y]
             right = [center[0] + radius, center[1]]
             right[0] = round(float(right[0]), 3)
@@ -489,6 +481,28 @@ def gen_trace_path_via(filename, gerberList, offset, h, stop_lift, angle, rotate
             start = [center[0], center[1]]
 
         if line.find('M02') != -1:
+
+            # Remove identical bounds
+            i = 0
+            while i < len(bounds) - 1:
+                j = i + 1
+                while j < len(bounds):
+                    if bounds[i] == bounds[j]:
+                        del bounds[j]
+                    else:
+                        j += 1
+                i += 1
+
+            tempStart = rotateCoords(bounds[len(bounds) - 1][0], bounds[len(bounds) - 1][1], radAngle, rotateCenter)
+            for bound in bounds:
+                tempCoords = rotateCoords(bound[0], bound[1], radAngle, rotateCenter)
+                segments.append([])
+                segments[len(segments) - 1].append(tempStart[0])
+                segments[len(segments) - 1].append(tempCoords[0])
+                segments[len(segments) - 1].append(tempStart[1])
+                segments[len(segments) - 1].append(tempCoords[1])
+                tempStart = deepcopy(tempCoords)
+
             finalList = raster(segments, lineThickness)
             moveNoz(draw_trace, float(stop_lift))
             finalList[0] = rotateCoords(finalList[0][0], finalList[0][1], -radAngle, rotateCenter)
@@ -524,6 +538,6 @@ def gen_trace_path_via(filename, gerberList, offset, h, stop_lift, angle, rotate
                 count += 1
             draw_trace.append('M110\n')
 
-            fillVias(draw_trace, vias, offset, outputCoeff, stop_lift)
+            fillVias(draw_trace, vias, nozOffset, outputCoeff, stop_lift)
 
     return draw_trace, bounds
